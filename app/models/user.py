@@ -6,7 +6,7 @@ from sqlalchemy.sql import func
 
 
 class User(Base):
-    __tablename__ = "users"
+    __tablename__ = "user"
 
     id: Mapped[int] = mapped_column(Integer,primary_key=True,index=True)
     email: Mapped[str] = mapped_column(String,nullable=False,unique=True,index=True)
