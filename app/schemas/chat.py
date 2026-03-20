@@ -5,7 +5,7 @@ from datetime import datetime
 class UploadResponse(BaseModel):
     message: str
     document_id: int
-    filename: str
+    file_name: str
 
 class ChatRequest(BaseModel):
     question: str
@@ -16,8 +16,8 @@ class ChatResponse(BaseModel):
 
 class DocumentResponse(BaseModel):
     id: int
-    filename: str
-    uploaded_at: datetime
+    file_name: str
+    uploaded_At: datetime
 
     class Config:
         from_attributes = True

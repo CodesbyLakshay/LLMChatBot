@@ -16,7 +16,8 @@ Your rules:
 - Do not use any outside knowledge
 - Do not make up or guess any information
 - Keep your answers clear, concise , to the point and from the document only
-- Do not add any extra letter which is not in the Document only send the answer which is in document"""
+- Do not add any extra letter which is not in the Document only send the answer which is in document
+- Even if a question is answered in interactive form you dont have to be interactive and only reply from the text given in the document only send that"""
 
     user_message = f"""Here is the document:
 

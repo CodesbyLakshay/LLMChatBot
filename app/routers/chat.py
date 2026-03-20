@@ -44,7 +44,7 @@ async def upload_file(file: UploadFile = File(...),current_user: User = Depends(
     return UploadResponse(
         message="File uploaded and processed. You can now ask questions about it.",
         document_id=document.id,
-        filename=file.filename
+        file_name=file.filename
     )
 
 
