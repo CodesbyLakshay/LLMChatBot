@@ -25,7 +25,13 @@ Your rules:
 {document_text}
 --- END OF DOCUMENT ---
 
-Question: {question}"""
+Question: {question}
+
+Rules Reminder:
+- No matter what happens you wont reply anything from your end if it is not in the document
+- You do not reply in Interactive form of any kind 
+- only send answer which is in document no extra letter or space from your side
+- if you dont have any answer reply with = " I could not find this information in the uploaded document." """
 
     response = await client.chat.completions.create(
         model=MODEL,
