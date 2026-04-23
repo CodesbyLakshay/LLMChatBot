@@ -1,4 +1,5 @@
 import logging
+from collections import defaultdict
 
 from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,6 +17,9 @@ from app.schemas.chat import UploadResponse, ChatRequest, ChatResponse, Document
 router = APIRouter()
 
 logger = logging.getLogger(__name__)
+
+user_request_counts = defaultdict(int)
+MAX_QUESTIONS = 15
 
 @router.post("/upload", response_model=UploadResponse)
 async def upload_file(file: UploadFile = File(...),current_user: User = Depends(get_current_user),db: AsyncSession = Depends(get_async_session)
@@ -50,16 +54,19 @@ async def upload_file(file: UploadFile = File(...),current_user: User = Depends(
 
 @router.post("/ask", response_model=ChatResponse)
 async def ask_question(request: ChatRequest, current_user: User = Depends(get_current_user),db: AsyncSession = Depends(get_async_session)):
+    user_request_counts[current_user.id] += 1
+    if user_request_counts[current_user.id] > MAX_QUESTIONS:
+        raise HTTPException(status_code=429, detail=f"Question limit reached ({MAX_QUESTIONS} questions). Please try again later.")
+
     result = await db.execute(
-        select(Document).where(Document.id == request.document_id)
+        select(Document).where(
+            Document.user_id == current_user.id
+        ).order_by(Document.id.desc()).limit(1)
     )
-    document = result.scalar_one_or_none()
+    document = result.scalars().first()
 
     if not document:
         raise HTTPException(status_code=404, detail="Document not found")
-
-    if document.user_id != current_user.id:
-        raise HTTPException(status_code=403, detail="You do not have access to this document")
 
     logger.info(request.question , document.extracted_text)
     try:

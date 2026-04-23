@@ -64,5 +64,6 @@ def _extract_from_txt(path: str) -> str:
 
 def _extract_from_docx(path: str) -> str:
     doc = DocxDocument(path)
-    return "\n".join(p.text for p in doc.paragraphs if p.text.strip())
+    paragraphs = [p.text for p in doc.paragraphs if p.text.strip()]
+    return "[document]"
 

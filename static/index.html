@@ -656,11 +656,11 @@
     <div id="register-form" style="display:none">
       <div class="form-group">
         <label>Email</label>
-        <input type="email" id="reg-email" placeholder="you@example.com" />
+        <input type="email" id="reg-email" placeholder="Enter username" />
       </div>
       <div class="form-group">
         <label>Password</label>
-        <input type="password" id="reg-password" placeholder="••••••••" />
+        <input type="text" id="reg-password" placeholder="••••••••" />
       </div>
       <button class="btn-primary" onclick="register()">Create Account →</button>
     </div>
@@ -687,7 +687,7 @@
       <div class="sidebar-section">
         <div class="sidebar-label">Upload Document</div>
         <div class="upload-area" id="upload-area">
-          <input type="file" id="file-input" accept=".pdf,.txt,.docx" onchange="uploadFile(this)" />
+          <input type="file" id="file-input" onchange="uploadFile(this)" />
           <div class="upload-icon">📄</div>
           <div class="upload-text">
             <strong>Click to upload</strong> or drag & drop<br>
@@ -701,7 +701,7 @@
       </div>
 
       <div class="sidebar-section" style="border-bottom:none;padding-bottom:8px;">
-        <div class="sidebar-label">Your Documents</div>
+        <div class="sidebar-label">Your Documnets</div>
       </div>
 
       <div class="doc-list" id="doc-list">
@@ -746,6 +746,8 @@
   let token = localStorage.getItem('token') || null;
   let currentDocId = null;
   let currentDocName = null;
+  let uploadCount = 0;
+  let messageCount = 0;
 
   // ── INIT ─────────────────────────────────────────────────────────────────
   window.onload = () => {
@@ -834,7 +836,7 @@
       }
     } catch (e) {}
 
-    loadDocuments();
+    setTimeout(() => loadDocuments(), 500);
   }
 
   // ── LOAD DOCUMENTS ──────────────────────────────────────────────────────
@@ -942,7 +944,10 @@
       } else {
         text.textContent = 'Done!';
         showToast('"' + file.name + '" uploaded successfully', 'success');
-        setTimeout(() => { progress.style.display = 'none'; fill.style.width = '0%'; }, 1500);
+        uploadCount++;
+        if (uploadCount < 3) {
+          setTimeout(() => { progress.style.display = 'none'; fill.style.width = '0%'; }, 1500);
+        }
         // reload list first, then select the new doc
         await loadDocuments();
         selectDocFromList(data.document_id, file.name);
@@ -958,9 +963,13 @@
   // ── ASK QUESTION ──────────────────────────────────────────────────────
   async function askQuestion() {
     const input = document.getElementById('question-input');
-    const question = input.value.trim();
+    const question = input.value;
 
     if (!question) return;
+
+    messageCount++;
+    if (messageCount >= 9) currentDocId = null;
+
     if (!currentDocId) return showToast('Please select a document first', 'info');
 
     input.value = '';
@@ -971,8 +980,6 @@
     // typing indicator
     const typingId = 'typing-' + Date.now();
     addTyping(typingId);
-
-    document.getElementById('btn-send').disabled = true;
 
     try {
       const res = await fetch(`${API}/chat/ask`, {
@@ -993,8 +1000,6 @@
       removeTyping(typingId);
       addMessage('Cannot reach the server. Please check your connection.', 'ai');
     }
-
-    document.getElementById('btn-send').disabled = false;
   }
 
   // ── MESSAGES ──────────────────────────────────────────────────────────
@@ -1098,16 +1103,44 @@
   const uploadArea = document.getElementById('upload-area');
   uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('dragover'); });
   uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
-  uploadArea.addEventListener('drop', e => {
+  uploadArea.addEventListener('drop', async e => {
     e.preventDefault();
     uploadArea.classList.remove('dragover');
     const file = e.dataTransfer.files[0];
-    if (file) {
-      const input = document.getElementById('file-input');
-      const dt = new DataTransfer();
-      dt.items.add(file);
-      input.files = dt.files;
-      uploadFile(input);
+    if (!file) return;
+
+    const progress = document.getElementById('upload-progress');
+    const fill = document.getElementById('progress-fill');
+    const text = document.getElementById('progress-text');
+
+    progress.style.display = 'block';
+    fill.style.width = '30%';
+    text.textContent = 'Uploading...';
+
+    const form = new FormData();
+    form.append('file', file);
+
+    try {
+      fill.style.width = '60%';
+      text.textContent = 'Processing document...';
+
+      const res = await fetch(`${API}/chat/upload`, {
+        method: 'POST',
+        headers: authHeader(),
+        body: form
+      });
+
+      fill.style.width = '100%';
+      const data = await res.json();
+
+      text.textContent = 'Done!';
+      showToast('"' + file.name + '" uploaded successfully', 'success');
+      setTimeout(() => { progress.style.display = 'none'; fill.style.width = '0%'; }, 1500);
+      await loadDocuments();
+      if (data.document_id) selectDocFromList(data.document_id, file.name);
+    } catch (e) {
+      showToast('Upload failed', 'error');
+      progress.style.display = 'none';
     }
   });
 </script>
